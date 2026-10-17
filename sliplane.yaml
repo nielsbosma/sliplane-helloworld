@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://sliplane.opendeploy.cloud/schema/v1.json
+version: 1
+
+app:
+  name: Hello World
+  description: A minimal web app behind a single master password.
+  docs: https://github.com/nielsbosma/sliplane-helloworld
+
+server:
+  minimum: starter
+
+inputs:
+  master_password:
+    type: secret
+    label: Master password
+    help: Everyone who knows this password can sign in.
+    required: true
+
+services:
+  web:
+    image: ghcr.io/nielsbosma/sliplane-helloworld:${{ release.tag }}
+    public: true
+    port: 3000
+    healthcheck: /health
+    env:
+      MASTER_PASSWORD: ${{ inputs.master_password }}
+      SESSION_SECRET: ${{ secret(48) }}
+
+done:
+  open: ${{ services.web.url }}
+  message: Sign in with the master password you chose.
