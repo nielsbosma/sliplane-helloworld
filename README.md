@@ -16,6 +16,7 @@ A demo app behind a single master password that exercises what [Sliplane Deploye
 - **Ask the LLM**: sends a prompt to `<LLM_BASE_URL>/chat/completions`.
 - **Send a test email** over SMTP.
 - **Updates**: the page shows its version and, when a newer GitHub release exists, an "Update to version x" button. It opens the deployer's update page, where you sign in to Sliplane and confirm, and the app is redeployed with the new image.
+- **API token**: a named secret (`secrets.api_token`) that the deployer generates and shows on its done screen. Send it as `Authorization: Bearer <token>` to call `/api/*` without signing in.
 - **Error reporting**: with `SENTRY_DSN` set to a Bugsink project's DSN, errors are reported there. The page has a button that throws one.
 
 Migrations in [migrations/](migrations) run on every start, in order, and only once each. They are tracked in the `hello_migrations` table and guarded by an advisory lock. Add a new numbered `.sql` file to change the schema.

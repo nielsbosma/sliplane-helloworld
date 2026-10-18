@@ -34,6 +34,12 @@ addons:
     optional: true
     reason: Sends a test email from the demo page.
 
+secrets:
+  api_token:
+    label: API Token
+    length: 40
+    show: true
+
 databases:
   db:
     engine: postgres
@@ -59,6 +65,8 @@ services:
       DATA_DIR: /data
       MASTER_PASSWORD: ${{ inputs.master_password }}
       SESSION_SECRET: ${{ secret(48) }}
+      API_TOKEN: ${{ secrets.api_token }}
+      PUBLIC_URL: ${{ services.web.url }}
       UPDATE_URL: ${{ deployment.updateUrl }}
       DATABASE_URL: ${{ databases.db.url }}
       S3_ENDPOINT: ${{ buckets.files.endpoint }}
