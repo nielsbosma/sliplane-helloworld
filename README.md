@@ -26,7 +26,7 @@ Migrations in [migrations/](migrations) run on every start, in order, and only o
 
 [sliplane.yaml](sliplane.yaml) asks for a master password and your email, and optionally for LLM, SMTP and Composio settings. It then creates:
 
-- a managed Postgres 17 database that only accepts connections from the app's server
+- a managed Postgres 17 database that only accepts connections from the app's server, or, if you pick one, a Postgres you already have (one of your managed databases or a connection string). The deployer warns when it already has tables, and the Items section shows which database the app uses and any tables in it that the app didn't make.
 - a bucket with its own access key
 - a volume mounted at `/data`
 - the app, from `ghcr.io/nielsbosma/sliplane-helloworld:<release tag>`

@@ -49,6 +49,8 @@ databases:
   db:
     engine: postgres
     version: 17
+    # The deployer offers your existing managed Postgres or a connection string too, and warns about tables already in it.
+    existing: true
 
 buckets:
   files: {}
