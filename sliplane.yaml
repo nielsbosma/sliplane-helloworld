@@ -3,18 +3,44 @@ version: 1
 
 app:
   name: Hello World
-  description: A minimal web app behind a single master password.
+  description: A demo app behind a master password, with Postgres, a bucket, an LLM, SMTP and Bugsink.
   docs: https://github.com/nielsbosma/sliplane-helloworld
 
 server:
   minimum: starter
+  recommended: base
 
 inputs:
   master_password:
     type: secret
     label: Master password
-    help: Everyone who knows this password can sign in.
+    help: Signs you in to the app. Bugsink uses it too.
     required: true
+  admin_email:
+    type: email
+    label: Your email
+    help: Your Bugsink login.
+    required: true
+
+addons:
+  llm:
+    use: llm
+    providers: [openai-compatible, openai, openrouter]
+    default: openai-compatible
+    optional: true
+    reason: Answers prompts on the demo page.
+  smtp:
+    use: smtp
+    optional: true
+    reason: Sends a test email from the demo page.
+
+databases:
+  db:
+    engine: postgres
+    version: 17
+
+buckets:
+  files: {}
 
 services:
   web:
@@ -25,7 +51,35 @@ services:
     env:
       MASTER_PASSWORD: ${{ inputs.master_password }}
       SESSION_SECRET: ${{ secret(48) }}
+      DATABASE_URL: ${{ databases.db.url }}
+      S3_ENDPOINT: ${{ buckets.files.endpoint }}
+      S3_BUCKET: ${{ buckets.files.bucket }}
+      S3_ACCESS_KEY_ID: ${{ buckets.files.accessKeyId }}
+      S3_SECRET_ACCESS_KEY: ${{ buckets.files.secretAccessKey }}
+      LLM_BASE_URL: ${{ addons.llm.baseUrl }}
+      LLM_API_KEY: ${{ addons.llm.apiKey }}
+      LLM_MODEL: ${{ addons.llm.model }}
+      SMTP_HOST: ${{ addons.smtp.host }}
+      SMTP_PORT: ${{ addons.smtp.port }}
+      SMTP_SECURITY: ${{ addons.smtp.security }}
+      SMTP_USER: ${{ addons.smtp.user }}
+      SMTP_PASSWORD: ${{ addons.smtp.password }}
+      SMTP_FROM: ${{ addons.smtp.from }}
+
+  bugsink:
+    image: docker.io/bugsink/bugsink:2.6.1
+    public: true
+    port: 8000
+    healthcheck: /health/ready
+    env:
+      DATABASE_URL: postgresql://${{ databases.db.user }}:${{ databases.db.password }}@${{ databases.db.host }}:${{ databases.db.port }}/${{ databases.db.database }}
+      SECRET_KEY: ${{ secret(64) }}
+      CREATE_SUPERUSER: ${{ inputs.admin_email }}:${{ inputs.master_password }}
+      BASE_URL: ${{ services.bugsink.url }}
+      BEHIND_HTTPS_PROXY: "True"
 
 done:
   open: ${{ services.web.url }}
-  message: Sign in with the master password you chose.
+  message: |
+    Sign in with your master password. Bugsink runs at ${{ services.bugsink.url }} (sign in with ${{ inputs.admin_email }} and the same password).
+    To report the app's errors there, create a project in Bugsink and set its DSN as SENTRY_DSN on the web service.
