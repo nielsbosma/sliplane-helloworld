@@ -20,7 +20,7 @@ Migrations in [migrations/](migrations) run on every start, in order, and only o
 
 [sliplane.yaml](sliplane.yaml) asks for a master password and your email, and optionally for LLM and SMTP settings. It then creates:
 
-- a Postgres 17 container that is only reachable over the server's private network
+- a managed Postgres 17 database that only accepts connections from the app's server
 - a bucket with its own access key
 - a volume mounted at `/data`
 - the app, from `ghcr.io/nielsbosma/sliplane-helloworld:<release tag>`
