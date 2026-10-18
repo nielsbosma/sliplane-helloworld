@@ -3,7 +3,11 @@ import pg from "pg";
 
 const MIGRATIONS = new URL("../migrations/", import.meta.url);
 
-export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+// node-postgres reads sslrootcert=system (which Sliplane's managed Postgres URLs carry) as a file name.
+const url = new URL(process.env.DATABASE_URL ?? "postgres://localhost/app");
+if (url.searchParams.get("sslrootcert") === "system") url.searchParams.delete("sslrootcert");
+
+export const pool = new pg.Pool({ connectionString: url.toString() });
 
 async function waitForDatabase() {
   for (let attempt = 1; ; attempt++) {

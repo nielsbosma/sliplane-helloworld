@@ -3,7 +3,7 @@ version: 1
 
 app:
   name: Hello World
-  description: A demo app behind a master password, with Postgres, a bucket, an LLM, SMTP and Bugsink.
+  description: A demo app behind a master password, with Postgres, a bucket, a volume, an LLM, SMTP and Bugsink.
   docs: https://github.com/nielsbosma/sliplane-helloworld
 
 server:
@@ -42,13 +42,21 @@ databases:
 buckets:
   files: {}
 
+volumes:
+  data:
+    description: The app's notes and start counter, kept across redeploys.
+
 services:
   web:
     image: ghcr.io/nielsbosma/sliplane-helloworld:${{ release.tag }}
     public: true
     port: 3000
     healthcheck: /health
+    volumes:
+      - name: data
+        mountPath: /data
     env:
+      DATA_DIR: /data
       MASTER_PASSWORD: ${{ inputs.master_password }}
       SESSION_SECRET: ${{ secret(48) }}
       UPDATE_URL: ${{ deployment.updateUrl }}

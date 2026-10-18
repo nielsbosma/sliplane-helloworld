@@ -2,12 +2,13 @@
 
 [![Deploy to Sliplane](https://sliplane.opendeploy.cloud/button.svg)](https://sliplane.opendeploy.cloud/?repo=https://github.com/nielsbosma/sliplane-helloworld)
 
-A demo app behind a single master password that exercises what [Sliplane Deployer](https://github.com/nielsbosma/sliplane-deployer) can set up: a Postgres database, an object storage bucket, an OpenAI-compatible LLM, SMTP, and a second service ([Bugsink](https://www.bugsink.com)) sharing the same database.
+A demo app behind a single master password that exercises what [Sliplane Deployer](https://github.com/nielsbosma/sliplane-deployer) can set up: a Postgres database, an object storage bucket, a volume, an OpenAI-compatible LLM, SMTP, and a second service ([Bugsink](https://www.bugsink.com)) sharing the same database.
 
 ## What's in it
 
 - **Items** (Postgres): add, rename, tick off and delete items, from the page or the JSON API at `/api/items`.
 - **Files** (bucket): upload, download and delete files, stored in an S3-compatible bucket.
+- **Disk** (volume): counts how often the app has started and keeps a note, both in files under `DATA_DIR`, so you can see them survive a redeploy.
 - **Ask the LLM**: sends a prompt to `<LLM_BASE_URL>/chat/completions`.
 - **Send a test email** over SMTP.
 - **Updates**: the page shows its version and, when a newer GitHub release exists, an "Update to version x" button. It opens the deployer's update page, where you sign in to Sliplane and confirm, and the app is redeployed with the new image.
@@ -21,6 +22,7 @@ Migrations in [migrations/](migrations) run on every start, in order, and only o
 
 - a Postgres 17 container that is only reachable over the server's private network
 - a bucket with its own access key
+- a volume mounted at `/data`
 - the app, from `ghcr.io/nielsbosma/sliplane-helloworld:<release tag>`
 - Bugsink, using the same database, with you as its admin (your email and the master password)
 
@@ -42,6 +44,7 @@ MASTER_PASSWORD=change-me DATABASE_URL=postgres://user:pass@localhost:5432/app n
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`                                           | Any OpenAI-compatible API.                                   |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | `SMTP_SECURITY` is `starttls` (default), `tls` or `none`.    |
 | `SENTRY_DSN`                                                                         | A Bugsink (or Sentry) DSN to report errors to.               |
+| `DATA_DIR`                                                                           | A directory on a volume for the disk demo.                   |
 | `APP_VERSION`                                                                        | Set in the image from the release tag.                       |
 | `UPDATE_URL`                                                                         | The deployer's update link for this deployment.              |
 | `PORT`                                                                               | Defaults to `3000`.                                          |

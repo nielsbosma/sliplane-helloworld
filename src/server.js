@@ -3,6 +3,7 @@ import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { Readable } from "node:stream";
 import * as Sentry from "@sentry/node";
 import { items, migrate, uploads } from "./db.js";
+import { diskConfigured, diskState, recordStart, saveNote } from "./disk.js";
 import { ask, llmConfigured } from "./llm.js";
 import { mailConfigured, sendTestMail } from "./mail.js";
 import { deleteObject, getObject, putObject, storageConfigured } from "./storage.js";
@@ -69,11 +70,16 @@ const fileRow = (f) => `<li><a class="grow" href="/files/${f.id}">${esc(f.filena
 <form method="post" action="/files/${f.id}/delete"><button>Delete</button></form></li>`;
 
 async function dashboard({ notice, answer, prompt } = {}) {
-  const [list, files, update] = await Promise.all([
+  const [list, files, update, disk] = await Promise.all([
     items.list(),
     storageConfigured ? uploads.list() : [],
     availableUpdate(),
+    diskConfigured ? diskState() : undefined,
   ]);
+  const diskHtml = disk
+    ? `<p>This app has started <strong>${disk.starts}</strong> time${disk.starts === 1 ? "" : "s"} on this volume. The count and the note below survive redeploys and updates.</p>
+<form method="post" action="/note"><textarea name="note" rows="3" placeholder="Write something to keep on disk">${esc(disk.note)}</textarea><button>Save note</button></form>`
+    : notConfigured("A volume");
   const filesHtml = storageConfigured
     ? `<ul>${files.map(fileRow).join("")}</ul>
 <form method="post" action="/files" enctype="multipart/form-data" class="row"><input type="file" name="file" required><button>Upload</button></form>`
@@ -99,6 +105,7 @@ ${notice ? `<p class="${notice.ok ? "ok" : "error"}">${esc(notice.text)}</p>` : 
 <ul>${list.map(itemRow).join("")}</ul>
 <form method="post" action="/items" class="row"><input type="text" name="title" placeholder="New item" required><button>Add</button></form></section>
 <section><h2>Files <span class="muted">(bucket)</span></h2>${filesHtml}</section>
+<section><h2>Disk <span class="muted">(volume)</span></h2>${diskHtml}</section>
 <section><h2>Ask the LLM <span class="muted">(OpenAI-compatible API)</span></h2>${llm}</section>
 <section><h2>Send a test email <span class="muted">(SMTP)</span></h2>${mail}</section>
 <section><h2>Error reporting <span class="muted">(Bugsink)</span></h2>${errors}</section>`);
@@ -215,6 +222,12 @@ route("POST", "/files/:id/delete", async (req, res, id) => {
   redirect(res);
 });
 
+route("POST", "/note", async (req, res) => {
+  const note = (await readForm(req)).get("note") ?? "";
+  if (diskConfigured) await saveNote(note.slice(0, 10_000));
+  redirect(res);
+});
+
 route("POST", "/ask", async (req, res) => {
   const prompt = (await readForm(req)).get("prompt") ?? "";
   if (!llmConfigured) return redirect(res);
@@ -270,6 +283,7 @@ async function handle(req, res) {
 }
 
 await migrate();
+await recordStart();
 
 createServer((req, res) => {
   handle(req, res).catch((error) => {

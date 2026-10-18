@@ -7,5 +7,4 @@ COPY migrations ./migrations
 ARG VERSION=dev
 ENV NODE_ENV=production PORT=3000 APP_VERSION=$VERSION
 EXPOSE 3000
-USER node
 CMD ["node", "src/server.js"]
