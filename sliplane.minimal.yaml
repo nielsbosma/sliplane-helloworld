@@ -3,7 +3,7 @@ version: 1
 
 app:
   name: Hello World Minimal
-  description: The Hello World app with just a Postgres database and a volume. The bucket, LLM, SMTP and Bugsink demos stay switched off.
+  description: The Hello World app with just a Postgres database and a volume. The bucket, LLM, SMTP, Composio and Bugsink demos stay switched off.
   docs: https://github.com/nielsbosma/sliplane-helloworld
 
 server:
