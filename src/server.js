@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { Readable } from "node:stream";
 import * as Sentry from "@sentry/node";
-import { items, migrate, uploads } from "./db.js";
+import { databaseInfo, items, migrate, uploads } from "./db.js";
 import { diskConfigured, diskState, recordStart, saveNote } from "./disk.js";
 import { composioConfigured, composioUserId, connectedAccounts } from "./composio.js";
 import { ask, llmConfigured } from "./llm.js";
@@ -72,12 +72,19 @@ const fileRow = (f) => `<li><a class="grow" href="/files/${f.id}">${esc(f.filena
 <form method="post" action="/files/${f.id}/delete"><button>Delete</button></form></li>`;
 
 async function dashboard({ notice, answer, prompt, accounts } = {}) {
-  const [list, files, update, disk] = await Promise.all([
+  const [list, files, update, disk, db] = await Promise.all([
     items.list(),
     storageConfigured ? uploads.list() : [],
     availableUpdate(),
     diskConfigured ? diskState() : undefined,
+    databaseInfo(),
   ]);
+  const shown = db.others.slice(0, 10).join(", ") + (db.others.length > 10 ? ", …" : "");
+  const dbHtml = `<p class="muted">Stored in <code>${esc(db.database)}</code> on <code>${esc(db.host)}</code>. ${
+    db.others.length
+      ? `It also holds ${db.others.length} table${db.others.length === 1 ? "" : "s"} this app didn't make (${esc(shown)}), from Bugsink or from the app that owned the database before you connected it.`
+      : "No other app has tables in it."
+  }</p>`;
   const diskHtml = disk
     ? `<p>This app has started <strong>${disk.starts}</strong> time${disk.starts === 1 ? "" : "s"} on this volume. The count and the note below survive redeploys and updates.</p>
 <form method="post" action="/note"><textarea name="note" rows="3" placeholder="Write something to keep on disk">${esc(disk.note)}</textarea><button>Save note</button></form>`
@@ -116,7 +123,7 @@ ${answer ? `<pre>${esc(answer)}</pre>` : ""}`
 <form method="post" action="/logout"><button>Sign out</button></form></header>
 <p class="muted">Version ${esc(version)}</p>${updateHtml}
 ${notice ? `<p class="${notice.ok ? "ok" : "error"}">${esc(notice.text)}</p>` : ""}
-<section><h2>Items <span class="muted">(Postgres)</span></h2>
+<section><h2>Items <span class="muted">(Postgres)</span></h2>${dbHtml}
 <ul>${list.map(itemRow).join("")}</ul>
 <form method="post" action="/items" class="row"><input type="text" name="title" placeholder="New item" required><button>Add</button></form></section>
 <section><h2>Files <span class="muted">(bucket)</span></h2>${filesHtml}</section>

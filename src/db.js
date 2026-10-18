@@ -53,6 +53,23 @@ export async function migrate() {
   }
 }
 
+const OWN_TABLES = new Set(["public.items", "public.uploads", "public.hello_migrations"]);
+
+/** Where the app's data lives, and tables in the same database that belong to something else. */
+export async function databaseInfo() {
+  const { rows } = await pool.query(
+    `SELECT current_database() AS database, n.nspname || '.' || c.relname AS name
+     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%'
+     ORDER BY 2`,
+  );
+  return {
+    host: url.hostname,
+    database: rows[0]?.database ?? url.pathname.slice(1),
+    others: rows.map((r) => r.name).filter((n) => !OWN_TABLES.has(n)),
+  };
+}
+
 export const items = {
   list: async () => (await pool.query("SELECT * FROM items ORDER BY id")).rows,
   get: async (id) => (await pool.query("SELECT * FROM items WHERE id = $1", [id])).rows[0],
