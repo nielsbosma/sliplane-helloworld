@@ -1,6 +1,10 @@
 # Sliplane Hello World
 
-[![Deploy to Sliplane](https://sliplane.opendeploy.cloud/button.svg)](https://sliplane.opendeploy.cloud/?repo=https://github.com/nielsbosma/sliplane-helloworld)
+[![Deploy to Sliplane](https://sliplane.opendeploy.cloud/button.svg)](https://sliplane.opendeploy.cloud/?repo=https://github.com/nielsbosma/sliplane-helloworld/sliplane.yaml)
+
+Just the app, a database and a volume:
+
+[![Deploy to Sliplane](https://sliplane.opendeploy.cloud/button.svg)](https://sliplane.opendeploy.cloud/?repo=https://github.com/nielsbosma/sliplane-helloworld/sliplane.minimal.yaml)
 
 A demo app behind a single master password that exercises what [Sliplane Deployer](https://github.com/nielsbosma/sliplane-deployer) can set up: a Postgres database, an object storage bucket, a volume, an OpenAI-compatible LLM, SMTP, and a second service ([Bugsink](https://www.bugsink.com)) sharing the same database.
 
@@ -25,6 +29,8 @@ Migrations in [migrations/](migrations) run on every start, in order, and only o
 - a volume mounted at `/data`
 - the app, from `ghcr.io/nielsbosma/sliplane-helloworld:<release tag>`
 - Bugsink, using the same database, with you as its admin (your email and the master password)
+
+[sliplane.minimal.yaml](sliplane.minimal.yaml) is a second spec in the same repo. It only asks for the master password and creates the database, the volume and the app; the other demos say they aren't configured. Each button links straight to its spec file, which is how one repo offers several deployments.
 
 [publish-image.yml](.github/workflows/publish-image.yml) builds and pushes the image on every GitHub release.
 
