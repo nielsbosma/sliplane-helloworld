@@ -51,6 +51,7 @@ services:
     env:
       MASTER_PASSWORD: ${{ inputs.master_password }}
       SESSION_SECRET: ${{ secret(48) }}
+      UPDATE_URL: ${{ deployment.updateUrl }}
       DATABASE_URL: ${{ databases.db.url }}
       S3_ENDPOINT: ${{ buckets.files.endpoint }}
       S3_BUCKET: ${{ buckets.files.bucket }}

@@ -4,7 +4,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY src ./src
 COPY migrations ./migrations
-ENV NODE_ENV=production PORT=3000
+ARG VERSION=dev
+ENV NODE_ENV=production PORT=3000 APP_VERSION=$VERSION
 EXPOSE 3000
 USER node
 CMD ["node", "src/server.js"]

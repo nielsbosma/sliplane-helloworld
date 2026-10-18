@@ -6,6 +6,7 @@ import { items, migrate, uploads } from "./db.js";
 import { ask, llmConfigured } from "./llm.js";
 import { mailConfigured, sendTestMail } from "./mail.js";
 import { deleteObject, getObject, putObject, storageConfigured } from "./storage.js";
+import { availableUpdate, version } from "./version.js";
 
 const password = process.env.MASTER_PASSWORD;
 if (!password) {
@@ -45,7 +46,9 @@ ul{list-style:none;padding:0;margin:0}li{display:flex;gap:.5rem;align-items:cent
 li form{margin:0}.grow{flex:1}.muted{color:#78716c}.error{color:#b91c1c}.ok{color:#15803d}
 pre{white-space:pre-wrap;background:#f5f5f4;padding:.75rem;border-radius:8px}
 .login{max-width:320px;margin:20vh auto}.login input,.login button{width:100%;box-sizing:border-box;margin-top:.5rem}
-header{display:flex;justify-content:space-between;align-items:center}</style></head><body><main>${body}</main></body></html>`;
+header{display:flex;justify-content:space-between;align-items:center}header h1{margin-bottom:0}
+.update{background:#eff6ff;border:1px solid #bfdbfe;padding:.75rem 1rem;border-radius:12px}
+a.button{display:inline-block;background:#2563eb;color:#fff;padding:.45rem .9rem;border-radius:8px;text-decoration:none}</style></head><body><main>${body}</main></body></html>`;
 
 const loginPage = (error) =>
   page(`<section class="login"><h1>Sign in</h1>
@@ -66,7 +69,11 @@ const fileRow = (f) => `<li><a class="grow" href="/files/${f.id}">${esc(f.filena
 <form method="post" action="/files/${f.id}/delete"><button>Delete</button></form></li>`;
 
 async function dashboard({ notice, answer, prompt } = {}) {
-  const [list, files] = await Promise.all([items.list(), storageConfigured ? uploads.list() : []]);
+  const [list, files, update] = await Promise.all([
+    items.list(),
+    storageConfigured ? uploads.list() : [],
+    availableUpdate(),
+  ]);
   const filesHtml = storageConfigured
     ? `<ul>${files.map(fileRow).join("")}</ul>
 <form method="post" action="/files" enctype="multipart/form-data" class="row"><input type="file" name="file" required><button>Upload</button></form>`
@@ -81,8 +88,12 @@ ${answer ? `<pre>${esc(answer)}</pre>` : ""}`
   const errors = process.env.SENTRY_DSN
     ? `<form method="post" action="/boom"><button>Throw a test error</button></form>`
     : `<p class="muted">Create a project in Bugsink and set its DSN as <code>SENTRY_DSN</code> on this service to report errors.</p>`;
+  const updateHtml = update
+    ? `<p class="update"><a class="button" href="${esc(update.url)}">Update to version ${esc(update.tag)}</a></p>`
+    : "";
   return page(`<header><h1>Hello, World!</h1>
 <form method="post" action="/logout"><button>Sign out</button></form></header>
+<p class="muted">Version ${esc(version)}</p>${updateHtml}
 ${notice ? `<p class="${notice.ok ? "ok" : "error"}">${esc(notice.text)}</p>` : ""}
 <section><h2>Items <span class="muted">(Postgres)</span></h2>
 <ul>${list.map(itemRow).join("")}</ul>
