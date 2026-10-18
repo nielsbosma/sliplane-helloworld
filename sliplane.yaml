@@ -13,12 +13,12 @@ server:
 inputs:
   master_password:
     type: secret
-    label: Master password
+    label: Master Password
     help: Signs you in to the app. Bugsink uses it too.
     required: true
   admin_email:
     type: email
-    label: Your email
+    label: Your Email
     help: Your Bugsink login.
     required: true
 
