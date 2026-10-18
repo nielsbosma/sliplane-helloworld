@@ -3,7 +3,7 @@ version: 1
 
 app:
   name: Hello World
-  description: A demo app behind a master password, with Postgres, a bucket, a volume, an LLM, SMTP and Bugsink.
+  description: A demo app behind a master password, with Postgres, a bucket, a volume, an LLM, SMTP, Composio and Bugsink.
   docs: https://github.com/nielsbosma/sliplane-helloworld
 
 server:
@@ -33,6 +33,11 @@ addons:
     use: smtp
     optional: true
     reason: Sends a test email from the demo page.
+  composio:
+    use: composio
+    toolkits: [github]
+    optional: true
+    reason: Lists your connected accounts on the demo page.
 
 secrets:
   api_token:
@@ -82,6 +87,8 @@ services:
       SMTP_USER: ${{ addons.smtp.user }}
       SMTP_PASSWORD: ${{ addons.smtp.password }}
       SMTP_FROM: ${{ addons.smtp.from }}
+      COMPOSIO_API_KEY: ${{ addons.composio.apiKey }}
+      COMPOSIO_USER_ID: ${{ addons.composio.userId }}
 
   bugsink:
     image: docker.io/bugsink/bugsink:2.6.1

@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import * as Sentry from "@sentry/node";
 import { items, migrate, uploads } from "./db.js";
 import { diskConfigured, diskState, recordStart, saveNote } from "./disk.js";
+import { composioConfigured, composioUserId, connectedAccounts } from "./composio.js";
 import { ask, llmConfigured } from "./llm.js";
 import { mailConfigured, sendTestMail } from "./mail.js";
 import { deleteObject, getObject, putObject, storageConfigured } from "./storage.js";
@@ -70,7 +71,7 @@ const fileRow = (f) => `<li><a class="grow" href="/files/${f.id}">${esc(f.filena
 <span class="muted">${(f.size / 1024).toFixed(1)} KB</span>
 <form method="post" action="/files/${f.id}/delete"><button>Delete</button></form></li>`;
 
-async function dashboard({ notice, answer, prompt } = {}) {
+async function dashboard({ notice, answer, prompt, accounts } = {}) {
   const [list, files, update, disk] = await Promise.all([
     items.list(),
     storageConfigured ? uploads.list() : [],
@@ -92,6 +93,15 @@ ${answer ? `<pre>${esc(answer)}</pre>` : ""}`
   const mail = mailConfigured
     ? `<form method="post" action="/mail" class="row"><input type="email" name="to" placeholder="you@example.com" required><button>Send</button></form>`
     : notConfigured("SMTP");
+  const accountsHtml = accounts
+    ? accounts.length
+      ? `<ul>${accounts.map((a) => `<li><span class="grow">${esc(a.toolkit)}</span><span class="muted">${esc(a.status)}</span></li>`).join("")}</ul>`
+      : `<p class="muted">No connected accounts yet.</p>`
+    : "";
+  const composio = composioConfigured
+    ? `<p>Lists the apps connected for Composio user <code>${esc(composioUserId)}</code>.</p>
+<form method="post" action="/composio"><button>List connected accounts</button></form>${accountsHtml}`
+    : notConfigured("Composio");
   const errors = process.env.SENTRY_DSN
     ? `<form method="post" action="/boom"><button>Throw a test error</button></form>`
     : `<p class="muted">Create a project in Bugsink and set its DSN as <code>SENTRY_DSN</code> on this service to report errors.</p>`;
@@ -113,6 +123,7 @@ ${notice ? `<p class="${notice.ok ? "ok" : "error"}">${esc(notice.text)}</p>` : 
 <section><h2>Disk <span class="muted">(volume)</span></h2>${diskHtml}</section>
 <section><h2>Ask the LLM <span class="muted">(OpenAI-compatible API)</span></h2>${llm}</section>
 <section><h2>Send a test email <span class="muted">(SMTP)</span></h2>${mail}</section>
+<section><h2>Agent tools <span class="muted">(Composio)</span></h2>${composio}</section>
 <section><h2>Error reporting <span class="muted">(Bugsink)</span></h2>${errors}</section>
 <section><h2>API token <span class="muted">(generated secret)</span></h2>${api}</section>`);
 }
@@ -252,6 +263,15 @@ route("POST", "/mail", async (req, res) => {
     send(res, 200, await dashboard({ notice: { ok: true, text: `Sent a test email to ${to}.` } }));
   } catch (error) {
     send(res, 502, await dashboard({ notice: { text: `Sending failed: ${error.message}` } }));
+  }
+});
+
+route("POST", "/composio", async (req, res) => {
+  if (!composioConfigured) return redirect(res);
+  try {
+    send(res, 200, await dashboard({ accounts: await connectedAccounts() }));
+  } catch (error) {
+    send(res, 502, await dashboard({ notice: { text: `The Composio request failed: ${error.message}` } }));
   }
 });
 
