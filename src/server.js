@@ -23,6 +23,7 @@ if (process.env.SENTRY_DSN) Sentry.init({ dsn: process.env.SENTRY_DSN });
 const port = Number(process.env.PORT ?? 3000);
 const key = process.env.SESSION_SECRET ?? randomBytes(32).toString("hex");
 const token = createHmac("sha256", key).update("session").digest("hex");
+const apiToken = process.env.API_TOKEN;
 const MAX_UPLOAD = 10 * 1024 * 1024;
 
 const equal = (a, b) => {
@@ -94,6 +95,10 @@ ${answer ? `<pre>${esc(answer)}</pre>` : ""}`
   const errors = process.env.SENTRY_DSN
     ? `<form method="post" action="/boom"><button>Throw a test error</button></form>`
     : `<p class="muted">Create a project in Bugsink and set its DSN as <code>SENTRY_DSN</code> on this service to report errors.</p>`;
+  const api = apiToken
+    ? `<p>Call the JSON API without signing in, using the token the deployer showed when it finished:</p>
+<pre>curl -H "Authorization: Bearer $API_TOKEN" ${esc(process.env.PUBLIC_URL ?? "")}/api/items</pre>`
+    : notConfigured("An API token");
   const updateHtml = update
     ? `<p class="update"><a class="button" href="${esc(update.url)}">Update to version ${esc(update.tag)}</a></p>`
     : "";
@@ -108,7 +113,8 @@ ${notice ? `<p class="${notice.ok ? "ok" : "error"}">${esc(notice.text)}</p>` : 
 <section><h2>Disk <span class="muted">(volume)</span></h2>${diskHtml}</section>
 <section><h2>Ask the LLM <span class="muted">(OpenAI-compatible API)</span></h2>${llm}</section>
 <section><h2>Send a test email <span class="muted">(SMTP)</span></h2>${mail}</section>
-<section><h2>Error reporting <span class="muted">(Bugsink)</span></h2>${errors}</section>`);
+<section><h2>Error reporting <span class="muted">(Bugsink)</span></h2>${errors}</section>
+<section><h2>API token <span class="muted">(generated secret)</span></h2>${api}</section>`);
 }
 
 const send = (res, status, html) => {
@@ -270,7 +276,9 @@ async function handle(req, res) {
   }
 
   const cookie = /(?:^|;\s*)session=([^;]+)/.exec(req.headers.cookie ?? "")?.[1] ?? "";
-  if (!equal(cookie, token)) {
+  const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1] ?? "";
+  const viaToken = Boolean(apiToken) && url.pathname.startsWith("/api/") && equal(bearer, apiToken);
+  if (!equal(cookie, token) && !viaToken) {
     if (url.pathname.startsWith("/api/")) return json(res, 401, { error: "Sign in first" });
     return url.pathname === "/" ? send(res, 200, loginPage()) : redirect(res);
   }
