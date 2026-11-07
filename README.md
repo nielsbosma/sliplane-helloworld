@@ -6,7 +6,7 @@ Just the app, a database and a volume:
 
 [![Deploy to Sliplane](https://sliplane.opendeploy.cloud/button.svg)](https://sliplane.opendeploy.cloud/?repo=https://github.com/nielsbosma/sliplane-helloworld/sliplane.minimal.yaml)
 
-A demo app behind a single master password that exercises what [Sliplane Deployer](https://github.com/nielsbosma/sliplane-deployer) can set up: a Postgres database, an object storage bucket, a volume, an OpenAI-compatible LLM, SMTP, Composio, and a second service ([Bugsink](https://www.bugsink.com)) sharing the same database.
+A demo app behind a single master password that exercises what [Sliplane Deployer](https://sliplane.opendeploy.cloud) can set up: a Postgres database, an object storage bucket, a volume, an OpenAI-compatible LLM, SMTP, Composio, and a second service ([Bugsink](https://www.bugsink.com)) sharing the same database.
 
 ## What's in it
 
